@@ -1,0 +1,119 @@
+---
+output: html_document
+---
+# Course Project : Regression Model 
+# Effects of Transmission on MPG
+###Shabir Jan
+
+# Executive Summary
+Motor Trend, an automobile trend magazine is interested in exploring relationship between a set of varaibles and miles per gallon(MPG) (outcome). They are particularly interested in the following two questions.
+ 
+        - Is an automatic or manual transmission better for MPG.
+        - Quantify the MPG difference between automatic and manual transmissions
+        
+So by using simple linear regression analysis we got these results.
+
+        - **Manual** transmission achieve higher value of  MPG compared to automatic transmission.
+        - This increase is approx. 1.8 MPG
+
+##Loading Data and Processing the Data
+We will start by loading **mtcars** dataset and performing necessary adjustments.
+
+```{r dataprocessing,echo=TRUE,cache=TRUE}
+data(mtcars)
+mtcars$cyl <- factor(mtcars$cyl)
+mtcars$vs <- factor(mtcars$vs)
+mtcars$gear <- factor(mtcars$gear)
+mtcars$carb <- factor(mtcars$carb)
+mtcars$am <- factor(mtcars$am,labels=c("Automatic","Manual"))
+```
+
+## Exploratory Analysis
+We will explore various relationships between variables of interest.
+First, we plot the relationship between all the variables of the **mtcars** dataset. We discovered from this plot that the variables **cyl**,**disp**,**hp**,**drat**,**wt**,**vs** and **am** have strong coorelation with **MPG**  (Appendix, Fig-A)
+
+As we are interested in the effects of car transmission type on **MPG** . So in this plot we look at the distribution of **MPG** for each level of **am** (Automatic,Manual) by plotting the boxplot. This plot clearly shows that manual transmission tends to have higher **MPG**. (Appendix, Fig-B)
+
+## Regression Analysis
+Here we will perform regression analysis on the **mtcars** dataset. We will build regression models using different variables to find the best fit and compare it with the base model.
+
+```{r bestmodel,echo=TRUE,cache=TRUE,results='hide'}
+myModel <- lm(mpg~.,data=mtcars)
+bestModel <- step(myModel,direction="both")
+```
+So from the bestModel computations , it shows that **cyl**,**wt** and **hp** as cofounders and **am** as the independednt variables.
+
+```{r summaryofmodel ,echo=TRUE,cache=TRUE}
+summary(bestModel)
+```
+
+From the summary we get the adjusted-R value of 0.84, which is the maximum obtained , from this we can say that more than 84% of the variability is explained by the model.
+
+So now we will compare the base model with only **am** as the predictor variable and the best model which we computed earlier.
+
+```{r comparebasemodel,echo=TRUE,cache=TRUE}
+baseModel <- lm(mpg~am,data=mtcars)
+anova(baseModel,bestModel)
+```
+From looking above results we can reject the null hypothesis that confounder variables that we found earlier do not contribute to the accuracy of the model as the p value is highly significant.
+
+In the next section we will work on Model Residuals and Diagnostics.
+
+#Model Residuals & Diagnostics
+Here, we will plot our regression model along with computation of regression diagnostics for our linear model. This will help us in examining the residuals and finding leveraging points to find any problem with in the model.
+
+```{r residualmodel,echo=TRUE,cache=TRUE}
+par(mfrow=c(2,2))
+plot(bestModel)
+```
+
+We got the following points from the plot.
+
+- Residuals vs. Fitted plot  points are randomly scattered that verifies the independence condition.
+
+- The Normal Q-Q plot points  mostly fall on the line indicating that the residuals are normally distributed.
+
+- The Scale-Location plot  points scattered in a constant band pattern, indicating constant variance.
+
+- There are some distinct points of interest (outliers or leverage points) in the top right of the plots that may indicate values of increased leverage of outliers.
+
+Now here, we will compute some of regression diagnostics of our model to find out the leverage points about which we talked earlier. We will check top three points in each case of influence measures.
+
+```{r leveragepoints,echo=TRUE,cache=TRUE}
+leveragePoints <- hatvalues(bestModel)
+tail(sort(leveragePoints),3)
+
+influentionalPoints <- dfbetas(bestModel)
+tail(sort(influentionalPoints[,6]),3)
+```
+These results verfies that our prior analysis was correct.
+In the last section we will perform some Statisical Inference.
+
+#Statistical Inference
+We will perform t-test n two chunks of **MPG** data, manual and automatic transmission assuming that the transmission data has normal distribution and tests the null hypothesis. So based on t-test results, we reject the null hypothesis that the MPG distributions fro both manual and automatic are the same.
+
+```{r stinf,echo=TRUE,cache=TRUE}
+t.test(mpg~am,data=mtcars)
+```
+
+#Final Results and Conclusion
+Based on our prior analysis we can say that:  
+       
+       - Manual transmission cars get 1.8 more MPG than automatic.
+       - MPG will decrease by 2.5 every 1000lb increase in wt.
+       - MPG decreases negligibly (only 0.32) with every increase of 10 in hp.
+       - If number of cylinders, cyl increases from 4 to 6 and 8, MPG will decrease by a factor of 3 and 2.2 respectively (adjusted by hp, wt, and am).
+
+
+#Appendix
+## Fig-A Pair plots of mtcars dataset
+```{r pairs,echo=TRUE,cache=TRUE}
+pairs(mpg ~ ., data = mtcars)
+```
+## Fig-B - Boxplot of MPG by Transmission Type
+```{r boxplot,echo=TRUE,cache=TRUE}
+boxplot(mpg ~ am, data = mtcars, col = (c("red","blue")), ylab = "MPG", xlab = "Transmission Type")
+```
+
+
+
